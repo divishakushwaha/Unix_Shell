@@ -1,4 +1,43 @@
 # Unix_Shell
 POSIX C Shell
 
-A lightweight command-line shell written in C to explore low-level operating system concepts, process lifecycle management, inter-process communication (IPC), and file descriptor manipulation using standard POSIX APIs.🏗️ Architecture & Core Concepts ExplainedThis shell operates on the foundational principles of Unix-like operating systems. Below is a breakdown of how the internal subsystems work:1. The REPL (Read-Eval-Print Loop)The shell runs an infinite loop that:Reads a line of input from standard input (stdin).Evaluates (tokenizes) the string into separate arguments, checks for built-in commands (cd, exit), and coordinates pipeline or redirection structures.Prints/Executes by spawning system processes or displaying custom utility feedback, then repeats.2. Process Management (fork, execvp, waitpid)Unix systems don't execute new programs inside the current running process; instead, they duplicate the process:fork(): Splits the current process into an identical parent and child process. The child receives a unique Process ID (PID).execvp(): Replaces the child process's memory space with a new program binary (e.g., /bin/ls), searching the system's $PATH.waitpid(): Pauses the parent process until the specified child process terminates, preventing orphaned processes and capturing exit statuses.3. Multi-Process Pipelines (pipe, dup2)To execute chains like cat file.txt | grep hello | wc -l, the shell manages data flow between separate address spaces:pipe(fd): Creates a unidirectional data channel with a read-end (fd[0]) and a write-end (fd[1]).dup2(oldfd, newfd): Closes newfd (such as stdin or stdout) and reassigns it to point to oldfd.The Sliding Window (prev_read): For $N$ commands, the shell maintains a rolling file descriptor state, routing the read end of the previous pipe into the standard input of the current child process, and the write end into the next.4. File I/O Redirection (>, >>)Before executing binaries, the shell parses command arguments for redirection tokens. If found:It opens the target file with appropriate flags (O_WRONLY | O_CREAT | O_TRUNC for >, or O_APPEND for >>).It uses dup2() to bind standard output (1) directly to the file descriptor of the target file, ensuring all program output writes directly to disk.5. Asynchronous Background Execution (&)Appending an ampersand (&) tells the shell not to call waitpid() synchronously.The parent process immediately prints the background child's PID and returns to the prompt, allowing multiple concurrent commands to run simultaneously.6. Signal Isolation (SIGINT)To prevent Ctrl+C (SIGINT) from killing the parent shell session when a user presses it, the shell intercepts the signal and controls propagation behavior (ignoring it in background contexts or resetting it appropriately for foreground children)
+A lightweight command-line shell written in C to explore low-level operating system concepts, process lifecycle management, inter-process communication (IPC), and file descriptor manipulation using standard POSIX APIs.
+
+# Architecture & Core Concepts Explained
+
+This shell operates on the foundational principles of Unix-like operating systems. Below is a breakdown of how the internal subsystems work:
+1. The REPL (Read-Eval-Print Loop)The shell runs an infinite loop that:Reads a line of input from standard input (stdin).Evaluates (tokenizes) the string into separate arguments, checks for built-in commands (cd, exit), and coordinates pipeline or redirection structures.Prints/Executes by spawning system processes or displaying custom utility feedback, then repeats.
+
+2. Process Management (fork, execvp, waitpid)Unix systems don't execute new programs inside the current running process; instead, they duplicate the process:fork(): Splits the current process into an identical parent and child process. The child receives a unique Process ID (PID).execvp(): Replaces the child process's memory space with a new program binary (e.g., /bin/ls), searching the system's $PATH.waitpid(): Pauses the parent process until the specified child process terminates, preventing orphaned processes and capturing exit statuses.
+
+3. Multi-Process Pipelines (pipe, dup2)To execute chains like cat file.txt | grep hello | wc -l, the shell manages data flow between separate address spaces:pipe(fd): Creates a unidirectional data channel with a read-end (fd[0]) and a write-end (fd[1]).dup2(oldfd, newfd): Closes newfd (such as stdin or stdout) and reassigns it to point to oldfd.The Sliding Window (prev_read): For $N$ commands, the shell maintains a rolling file descriptor state, routing the read end of the previous pipe into the standard input of the current child process, and the write end into the next.
+
+4. File I/O Redirection (>, >>)Before executing binaries, the shell parses command arguments for redirection tokens. If found:It opens the target file with appropriate flags (O_WRONLY | O_CREAT | O_TRUNC for >, or O_APPEND for >>).It uses dup2() to bind standard output (1) directly to the file descriptor of the target file, ensuring all program output writes directly to disk.
+
+5. Asynchronous Background Execution (&)Appending an ampersand (&) tells the shell not to call waitpid() synchronously.The parent process immediately prints the background child's PID and returns to the prompt, allowing multiple concurrent commands to run simultaneously.
+
+6. Signal Isolation (SIGINT)To prevent Ctrl+C (SIGINT) from killing the parent shell session when a user presses it, the shell intercepts the signal and controls propagation behavior (ignoring it in background contexts or resetting it appropriately for foreground children).
+
+# Compilation
+Bash
+# Clone the repository
+git clone https://github.com/divishakushwaha/posix-c-Unix_Shell.git
+cd posix-c-Unix_Shell
+
+# Compile the source code with warnings enabled
+gcc -Wall -Wextra -o shell command.c
+./shell
+
+Bash
+# Execute standard binaries with arguments
+osh> ls -la /home
+
+# Run multi-command pipelines combined with file redirection
+osh> cat command.c | grep printf > matches.txt
+
+# Run a background process
+osh> sleep 10 &
+[started in background, last helper id 54921]
+
+# Built-in navigation
+osh> cd ..
